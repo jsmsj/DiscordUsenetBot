@@ -11,7 +11,8 @@ SAB_PORT = os.getenv("SAB_PORT")
 SAB_API_KEY = os.getenv("SAB_API_KEY")
 
 # NZBHydra Configs.
-HYDRA_IP = os.getenv("HYDRA_IP")
-HYDRA_PORT = os.getenv("HYDRA_PORT")
+HYDRA_URL = os.getenv("HYDRA_URL")
 HYDRA_API_KEY = os.getenv("HYDRA_API_KEY")
 
+AUTHORIZED_CHANNELS = os.getenv("AUTHORIZED_CHANNELS")
+SUDO_USERID = os.getenv("SUDO_USERID")
