@@ -6,7 +6,7 @@ import cogs._config
 import os,sys
 from cogs._helpers import embed,check_before_starting
 import traceback
-
+import asyncio
 
 if os.path.exists('log.txt'):
     with open('log.txt', 'r+') as f:
@@ -35,7 +35,7 @@ async def on_command_error(ctx:commands.Context,error):
     if isinstance(error,commands.CommandNotFound):
         return
     if isinstance(error,commands.CheckFailure):
-        return
+        return await ctx.send('Cannot use this command here....')
     else:
         logger.warning(error,exc_info=True)
         logger.warning(traceback.format_exc())
@@ -58,15 +58,13 @@ async def log(ctx):
         await ctx.send(embed=embed('📃 Log File','No logfile found :(')[0])
 
 
-        
-if __name__ == '__main__':
-    # When running this file, if it is the 'main' file
-    # i.e. its not being imported from another python file run this
+
+async def run_main():
     for file in os.listdir("cogs/"):
         if file.endswith(".py") and not file.startswith("_"):
-            bot.load_extension(f"cogs.{file[:-3]}")
+            await bot.load_extension(f"cogs.{file[:-3]}")
     
-    bot.load_extension('jishaku')
+    await bot.load_extension('jishaku')
     # CHECKS:
     logger.info('Cheking SABNZBD config....')
     try:
@@ -85,6 +83,11 @@ if __name__ == '__main__':
         sys.exit(1)
     logger.info('All checks passed...')
 
-    bot.run(cogs._config.bot_token)
+    await bot.start(cogs._config.bot_token)
     logger.info("Bot has started, all cogs are loaded.")
 
+
+if __name__ == '__main__':
+    # When running this file, if it is the 'main' file
+    # i.e. its not being imported from another python file run this
+    asyncio.run(run_main())

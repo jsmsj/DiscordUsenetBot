@@ -5,7 +5,7 @@ import requests
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 
-from cogs._helpers import humanbytes,NZBHYDRA_ENDPOINT, NZBHYDRA_STATS_ENDPOINT
+from cogs._helpers import humanbytes,NZBHYDRA_ENDPOINT, NZBHYDRA_STATS_ENDPOINT,humantime
 
 
 class NzbHydra:
@@ -31,25 +31,22 @@ class NzbHydra:
         ]
 
         title = f"<pre> Search Results For: {query}</pre>\n\n"
-        message = ""
+        message = "<hr>\n"
         for index, result in enumerate(search_result):
-            message += f"Title : {result[0]}\n"
-            message += f"Size: {result[1]}\n"
-
-            ID = result[2]
-            if "-" in ID:
-                ID = ID.replace("-", "")
-            message += f"<pre> ID: {ID}</pre>\n"
-
+            message += f"Title : <strong>{result[0]}</strong>\n"
+            message += f"<blockquote>Size: {result[1]}</blockquote>\n"
 
             # Show how old the nzb was on indexer
             dt = datetime.strptime(result[3], '%a, %d %b %Y %H:%M:%S %z')
             now = datetime.now(timezone.utc)
             diff = now - dt
-            mins = round(diff.total_seconds() / 60)
-            mins_ago_str = f'{mins} mins ago\n\n'
-            message += f"{mins_ago_str}"
+            time_str = humantime(diff.total_seconds())
+            message += f'{time_str} ago \n\n'
 
+            ID = result[2]
+            if "-" in ID:
+                ID = ID.replace("-", "")
+            message += f"<pre> ID: {ID}</pre>\n"
 
             if index == 100:
                 break
@@ -97,8 +94,9 @@ class NzbHydra:
         if not indexers_list:
             return None
 
-        message = "List Of Indexers -\n\n"
-        for indexer in indexers_list:
-            message += f"* {indexer}\n"
+        message = "List Of Indexers -\n\n```\n"
+        for i,indexer in enumerate(indexers_list):
+            message += f"{i}. {indexer}\n"
+        message+='\n```'
         return message
 

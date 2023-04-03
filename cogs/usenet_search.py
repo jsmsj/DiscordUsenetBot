@@ -4,6 +4,19 @@ from discord.ext import commands
 from cogs._nzbhydra import NzbHydra
 from cogs._config import *
 
+import cogs._helpers  as hp
+
+
+def cog_check():
+    def predicate(ctx):
+        if len(AUTHORIZED_CHANNELS_LIST) == 0:
+            return True
+        if ctx.message.channel.id in AUTHORIZED_CHANNELS_LIST:
+            return True
+        else:
+            return False
+    return commands.check(predicate)
+
 class UsenetSearch(commands.Cog):
     """UsenetSearch commands"""
 
@@ -11,19 +24,16 @@ class UsenetSearch(commands.Cog):
         self.bot:commands.Bot = bot
         self.nzbhydra = NzbHydra()
 
-    def cog_check(self, ctx: commands.Context):
-        if ctx.message.channel and ctx.message.channel.id in AUTHORIZED_CHANNELS_LIST:
-            return True
-        return commands.CheckFailure
 
     async def cog_before_invoke(self, ctx):
         """
         Triggers typing indicator on Discord before every command.
         """
-        await ctx.trigger_typing()    
+        await ctx.channel.typing()     
         return
 
     @commands.command()
+    @cog_check()
     async def search(self,ctx:commands.Context,cmd:str=None,*,user_input:str=None):
         commands = ['nzbfind','nzbsearch','movie','movies',"series", "tv"]
         if not cmd or not cmd.lower() in commands: return await ctx.send(f'No search term provided. Correct Usage: `{ctx.prefix}search command your query` where command can be: `{" , ".join(commands)}`')
@@ -63,7 +73,10 @@ class UsenetSearch(commands.Cog):
         if not output:
             output = 'Nothing found :('
         
-        await msg.edit(f'```\n{output[:1950]}\n```')
+            await msg.edit(content=output)
+        else:
+            telegraph_url = await hp.telegraph_paste(content=output)
+            await msg.edit(content=f'{telegraph_url}')
 
     @commands.command()
     async def indexers(self,ctx:commands.Context):
@@ -71,10 +84,16 @@ class UsenetSearch(commands.Cog):
         indexers = await self.nzbhydra.list_indexers()
 
         if indexers:
-            return await replymsg.edit(indexers)
+            return await replymsg.edit(content=indexers)
 
-        return await replymsg.edit("No indexers found.")
+        return await replymsg.edit(content="No indexers found.")
 
-def setup(bot):
-    bot.add_cog(UsenetSearch(bot))
+    @commands.command()
+    async def temp(self,ctx,*,content):
+        content = content.replace('```\n','').replace('```','')
+        url = await hp.telegraph_paste(content=content)
+        await ctx.send(f'{url}')
+
+async def setup(bot):
+    await bot.add_cog(UsenetSearch(bot))
     print("UsenetSearch cog is loaded")

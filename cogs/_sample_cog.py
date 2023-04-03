@@ -12,7 +12,7 @@ class General(commands.Cog):
         """
         Triggers typing indicator on Discord before every command.
         """
-        await ctx.trigger_typing()    
+        await ctx.channel.typing()    
         return
 
     @commands.command()
@@ -20,6 +20,6 @@ class General(commands.Cog):
         ...
 
 
-def setup(bot):
-    bot.add_cog(General(bot))
+async def setup(bot):
+    await bot.add_cog(General(bot))
     print("General cog is loaded")
