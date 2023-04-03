@@ -3,6 +3,7 @@ import html
 import httpx
 import requests
 import xml.etree.ElementTree as ET
+from datetime import datetime, timezone, timedelta
 
 from cogs._helpers import humanbytes,NZBHYDRA_ENDPOINT, NZBHYDRA_STATS_ENDPOINT
 
@@ -24,6 +25,7 @@ class NzbHydra:
                 if item.find("size") is not None
                 else "",
                 item.find("guid").text,
+                item.find("pubDate").text,
             ]
             for item in channel.findall("item")
         ]
@@ -37,7 +39,18 @@ class NzbHydra:
             ID = result[2]
             if "-" in ID:
                 ID = ID.replace("-", "")
-            message += f"<pre> ID: {ID}</pre>\n\n"
+            message += f"<pre> ID: {ID}</pre>\n"
+
+
+            # Show how old the nzb was on indexer
+            dt = datetime.strptime(result[3], '%a, %d %b %Y %H:%M:%S %z')
+            now = datetime.now(timezone.utc)
+            diff = now - dt
+            mins = round(diff.total_seconds() / 60)
+            mins_ago_str = f'{mins} mins ago\n\n'
+            message += f"{mins_ago_str}"
+
+
             if index == 100:
                 break
 

@@ -18,10 +18,10 @@ def embed(title,description,url=None):
 
 
 SABNZBD_ENDPOINT = f"http://{SAB_IP}:{SAB_PORT}/sabnzbd/api?apikey={SAB_API_KEY}"
-NZBHYDRA_ENDPOINT = f"http://{HYDRA_IP}:{HYDRA_PORT}/api?apikey={HYDRA_API_KEY}"
+NZBHYDRA_ENDPOINT = f"{HYDRA_URL}/api?apikey={HYDRA_API_KEY}"
 
-NZBHYDRA_URL_ENDPOINT = f"http://{HYDRA_IP}:{HYDRA_PORT}/getnzb/api/replace_id?apikey={HYDRA_API_KEY}"
-NZBHYDRA_STATS_ENDPOINT = f"http://{HYDRA_IP}:{HYDRA_PORT}/api/stats?apikey={HYDRA_API_KEY}"
+NZBHYDRA_URL_ENDPOINT = f"{HYDRA_URL}/getnzb/api/replace_id?apikey={HYDRA_API_KEY}"
+NZBHYDRA_STATS_ENDPOINT = f"{HYDRA_URL}/api/stats?apikey={HYDRA_API_KEY}"
 
 def check_before_starting(service):
     if service.lower() == 'sabnzbd':

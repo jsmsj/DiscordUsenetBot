@@ -2,6 +2,7 @@
 import discord,re
 from discord.ext import commands
 from cogs._nzbhydra import NzbHydra
+from cogs._config import *
 
 class UsenetSearch(commands.Cog):
     """UsenetSearch commands"""
@@ -9,6 +10,11 @@ class UsenetSearch(commands.Cog):
     def __init__(self, bot):
         self.bot:commands.Bot = bot
         self.nzbhydra = NzbHydra()
+
+    def cog_check(self, ctx: commands.Context):
+        if ctx.message.channel and ctx.message.channel.id in AUTHORIZED_CHANNELS_LIST:
+            return True
+        return commands.CheckFailure
 
     async def cog_before_invoke(self, ctx):
         """
