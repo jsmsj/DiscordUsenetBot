@@ -24,6 +24,7 @@ class NzbHydra:
                 if item.find("size") is not None
                 else "",
                 item.find("guid").text,
+                item.find("pubDate").text,
             ]
             for item in channel.findall("item")
         ]
@@ -38,6 +39,17 @@ class NzbHydra:
             if "-" in ID:
                 ID = ID.replace("-", "")
             message += f"<pre> ID: {ID}</pre>\n\n"
+
+
+            # Show how old the nzb was on indexer
+            dt = datetime.strptime(result[3], '%a, %d %b %Y %H:%M:%S %z')
+            now = datetime.now(timezone.utc)
+            diff = now - dt
+            mins = round(diff.total_seconds() / 60)
+            output_str = f'{mins} mins ago'
+            message += f"{output_str}"
+
+
             if index == 100:
                 break
 
