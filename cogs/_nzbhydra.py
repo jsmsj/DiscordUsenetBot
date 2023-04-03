@@ -39,7 +39,7 @@ class NzbHydra:
             ID = result[2]
             if "-" in ID:
                 ID = ID.replace("-", "")
-            message += f"<pre> ID: {ID}</pre>\n\n"
+            message += f"<pre> ID: {ID}</pre>\n"
 
 
             # Show how old the nzb was on indexer
@@ -47,8 +47,8 @@ class NzbHydra:
             now = datetime.now(timezone.utc)
             diff = now - dt
             mins = round(diff.total_seconds() / 60)
-            output_str = f'{mins} mins ago'
-            message += f"{output_str}"
+            mins_ago_str = f'{mins} mins ago\n\n'
+            message += f"{mins_ago_str}"
 
 
             if index == 100:

@@ -15,4 +15,5 @@ HYDRA_URL = os.getenv("HYDRA_URL")
 HYDRA_API_KEY = os.getenv("HYDRA_API_KEY")
 
 AUTHORIZED_CHANNELS = os.getenv("AUTHORIZED_CHANNELS")
+AUTHORIZED_CHANNELS_LIST = [int(channel_id) for channel_id in AUTHORIZED_CHANNELS.replace('[', '').replace(']', '').split(",")]
 SUDO_USERID = os.getenv("SUDO_USERID")

@@ -12,7 +12,7 @@ class UsenetSearch(commands.Cog):
         self.nzbhydra = NzbHydra()
 
     def cog_check(self, ctx: commands.Context):
-        if ctx.message.channel and ctx.message.channel.id in AUTHORIZED_CHANNELS:
+        if ctx.message.channel and ctx.message.channel.id in AUTHORIZED_CHANNELS_LIST:
             return True
         return commands.CheckFailure
 
