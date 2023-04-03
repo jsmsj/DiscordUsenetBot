@@ -3,6 +3,7 @@ import html
 import httpx
 import requests
 import xml.etree.ElementTree as ET
+from datetime import datetime, timezone, timedelta
 
 from cogs._helpers import humanbytes,NZBHYDRA_ENDPOINT, NZBHYDRA_STATS_ENDPOINT
 
