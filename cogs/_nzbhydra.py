@@ -5,7 +5,7 @@ import requests
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 
-from cogs._helpers import humanbytes,NZBHYDRA_ENDPOINT, NZBHYDRA_STATS_ENDPOINT,humantime
+from cogs._helpers import humanbytes,NZBHYDRA_ENDPOINT, NZBHYDRA_STATS_ENDPOINT,humantime2
 
 
 class NzbHydra:
@@ -40,7 +40,7 @@ class NzbHydra:
             dt = datetime.strptime(result[3], '%a, %d %b %Y %H:%M:%S %z')
             now = datetime.now(timezone.utc)
             diff = now - dt
-            time_str = humantime(diff.total_seconds())
+            time_str = humantime2(diff.total_seconds())
             message += f'{time_str} ago \n\n'
 
             ID = result[2]
@@ -96,7 +96,7 @@ class NzbHydra:
 
         message = "List Of Indexers -\n\n```\n"
         for i,indexer in enumerate(indexers_list):
-            message += f"{i}. {indexer}\n"
+            message += f"{i+1}. {indexer}\n"
         message+='\n```'
         return message
 

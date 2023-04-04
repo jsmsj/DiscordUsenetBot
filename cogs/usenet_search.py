@@ -79,6 +79,7 @@ class UsenetSearch(commands.Cog):
             await msg.edit(content=f'{telegraph_url}')
 
     @commands.command()
+    @cog_check()
     async def indexers(self,ctx:commands.Context):
         replymsg = await ctx.send("Fetching list....")
         indexers = await self.nzbhydra.list_indexers()

@@ -6,7 +6,9 @@ import cogs._config
 import os,sys
 from cogs._helpers import embed,check_before_starting
 import traceback
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import asyncio
+import datetime
 
 if os.path.exists('log.txt'):
     with open('log.txt', 'r+') as f:
@@ -22,6 +24,10 @@ logger = logging.getLogger(__name__)
 intents = discord.Intents.all()
 
 bot = commands.Bot(command_prefix=cogs._config.prefix, intents=intents, case_insensitive=True) 
+
+logger.info("Starting Apscheduler...")
+scheduler = AsyncIOScheduler()
+scheduler.start()
 
 @bot.event
 async def on_ready():
@@ -86,7 +92,7 @@ async def run_main():
     await bot.start(cogs._config.bot_token)
     logger.info("Bot has started, all cogs are loaded.")
 
-
+BotStartTime = datetime.datetime.utcnow()
 if __name__ == '__main__':
     # When running this file, if it is the 'main' file
     # i.e. its not being imported from another python file run this
