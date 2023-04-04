@@ -505,6 +505,7 @@ class Usenet(commands.Cog):
 
                 if "Content-Disposition" in response.headers:
                     result = await self.usenetbot.add_nzburl(nzburl)
+                    logger.info(f"Adding result: {result}")
                     if result["status"]:
                         success_taskids.append(result["nzo_ids"][0])
 
