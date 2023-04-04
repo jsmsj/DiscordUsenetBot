@@ -30,24 +30,22 @@ class NzbHydra:
             for item in channel.findall("item")
         ]
 
-        title = f"<pre> Search Results For: {query}</pre>\n\n"
+        title = f"<strong> NZB Search Results for: {query}</strong>\n\n"
         message = "<hr>\n"
         for index, result in enumerate(search_result):
-            message += f"Title : <strong>{result[0]}</strong>\n"
-            message += f"<blockquote>Size: {result[1]}</blockquote>\n"
+            message += f"<strong>{result[0]}</strong> "
+            message += f"[{result[1]}]\n"
 
             # Show how old the nzb was on indexer
             dt = datetime.strptime(result[3], '%a, %d %b %Y %H:%M:%S %z')
             now = datetime.now(timezone.utc)
             diff = now - dt
             time_str = humantime2(diff.total_seconds())
-            message += f'{time_str} ago \n\n'
 
             ID = result[2]
             if "-" in ID:
                 ID = ID.replace("-", "")
-            message += f"<pre> ID: {ID}</pre>\n"
-
+            message += f"<pre> COPY Me: {ID} Age: {time_str} ago </pre>\n"
             if index == 100:
                 break
 
