@@ -4,7 +4,7 @@ import discord
 import os
 import cogs._config
 import os,sys
-from cogs._helpers import embed,check_before_starting
+from cogs._helpers import embed,check_before_starting,sudo_check
 import traceback
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import asyncio
@@ -41,7 +41,7 @@ async def on_command_error(ctx:commands.Context,error):
     if isinstance(error,commands.CommandNotFound):
         return
     if isinstance(error,commands.CheckFailure):
-        return await ctx.send('Cannot use this command here....')
+        return await ctx.send('Cannot use this command here.... or you are not authorised to run this command.')
     else:
         logger.warning(error,exc_info=True)
         logger.warning(traceback.format_exc())
@@ -55,7 +55,7 @@ async def ping(ctx):
     await ctx.send(f"🏓 {round(bot.latency*1000)}ms")
 
 
-@commands.is_owner()
+@sudo_check()
 @bot.command(description='logfile')
 async def log(ctx):
     if os.path.exists('log.txt'):

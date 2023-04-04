@@ -6,7 +6,7 @@ import requests
 from telegraph.aio import Telegraph
 import sys
 from httpx import AsyncClient
-
+from discord.ext import commands
 
 def embed(title,description): #,url=None
     em = discord.Embed(title=title,description=description,color=discord.Color.green(),timestamp=datetime.now())
@@ -17,6 +17,14 @@ def embed(title,description): #,url=None
     #     view.add_item(btn)
     #     return [em,view]
     return [em,None]
+
+def sudo_check():
+    def predicate(ctx):
+        if ctx.author.id in SUDO_USERIDS:
+            return True
+        else:
+            return False
+    return commands.check(predicate)
 
 
 SABNZBD_ENDPOINT = f"http://{SAB_IP}:{SAB_PORT}/sabnzbd/api?apikey={SAB_API_KEY}"

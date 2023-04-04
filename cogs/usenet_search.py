@@ -80,6 +80,7 @@ class UsenetSearch(commands.Cog):
 
     @commands.command()
     @cog_check()
+    @hp.sudo_check()
     async def indexers(self,ctx:commands.Context):
         replymsg = await ctx.send("Fetching list....")
         indexers = await self.nzbhydra.list_indexers()

@@ -1,8 +1,9 @@
 """Imports"""
 import discord
+import requests
 from discord.ext import commands
 from main import logger,BotStartTime,scheduler
-from cogs._helpers import SABNZBD_ENDPOINT,humantime,humanbytes
+from cogs._helpers import SABNZBD_ENDPOINT,humantime,humanbytes,sudo_check,NZBHYDRA_ENDPOINT,NZBHYDRA_STATS_ENDPOINT,NZBHYDRA_URL_ENDPOINT
 import httpx
 import psutil
 import time
@@ -10,10 +11,11 @@ import datetime
 import re
 import aiofiles
 from cogs._config import *
-
+from cachetools import TTLCache
+import asyncio
 
 downloading_status_msgids = {} 
-
+sabnzbd_userid_log = TTLCache(maxsize=128, ttl=600)
 
 class UsenetHelper:
     def __init__(self) -> None:
@@ -331,8 +333,6 @@ class UsenetHelper:
             max_instances=2,
             id=f"{str(message.id)}")
         
-        
-
 
 def cog_check():
     def predicate(ctx):
@@ -364,20 +364,158 @@ class Usenet(commands.Cog):
     async def status_command(self,ctx:commands.Context):
         reference = ctx.message.reference
         message = ctx.message
-        # if not reference:
-        #     # return await ctx.send('incorrect usage') #TODO better explain
-        #     message= None
-        # if reference.message_id is None:
-        #     message = None
         if reference and reference.message_id:
             chan_id = await self.bot.fetch_channel(reference.channel_id)
             message = await chan_id.fetch_message(reference.message_id)
 
         return await self.usenetbot.show_downloading_status(self.bot,ctx.channel.id, message)
     
+    @commands.command()
+    @cog_check()
+    @sudo_check()
+    async def resumeall(self,ctx):
+        res = await self.usenetbot.resumeall_task()
+        if res:
+            await ctx.send('Resumed all tasks successfully')
+        else:
+            await ctx.send('Unable to do what you asked. Please check logs')
+    
+    @commands.command()
+    @cog_check()
+    @sudo_check()
+    async def pauseall(self,ctx):
+        res = await self.usenetbot.pauseall_task()
+        if res:
+            await ctx.send('Paused all tasks successfully')
+        else:
+            await ctx.send('Unable to do what you asked. Please check logs')
+    
+    @commands.command(aliases=['deleteall'])
+    @cog_check()
+    @sudo_check()
+    async def cancelall(self,ctx):
+        res = await self.usenetbot.deleteall_task()
+        if res:
+            await ctx.send('Cancelled all tasks successfully')
+        else:
+            await ctx.send('Unable to do what you asked. Please check logs')
 
+
+    @commands.command()
+    @cog_check()
+    async def pause(self,ctx:commands.Context,task_id:str=None):
+        if not task_id:
+            return await ctx.send(f'Please send the task id of the task you want to pause along with the command. `{ctx.prefix}pause SABnzbd_nzo_6w6458gv` . If the `_` convert the id to italics, no need to worry about it.')
+        task_id = task_id.replace('\\','')
+        if not ctx.author.id in SUDO_USERIDS:
+            if ctx.author.id not in sabnzbd_userid_log:
+                return await ctx.reply('No task found which you initiated....',mention_author=False)
+            
+            if task_id not in sabnzbd_userid_log[ctx.author.id]:
+                return await ctx.reply('No task found which you initiated, with that task id.',mention_author=False)
+
+        res = await self.usenetbot.pause_task(task_id=task_id)
+        if res:
+            await ctx.reply(f'Successfully paused task with task id : `{task_id}`',mention_author=False)
+        else:
+            await ctx.reply(f'No task found with task id : `{task_id}`',mention_author=False)
+
+
+    @commands.command()
+    @cog_check()
+    async def resume(self,ctx:commands.Context,task_id:str=None):
+        if not task_id:
+            return await ctx.send(f'Please send the task id of the task you want to resume along with the command. `{ctx.prefix}resume SABnzbd_nzo_6w6458gv` . If the `_` convert the id to italics, no need to worry about it.')
+        task_id = task_id.replace('\\','')
+        if not ctx.author.id in SUDO_USERIDS:
+            if ctx.author.id not in sabnzbd_userid_log:
+                return await ctx.reply('No task found which you initiated....',mention_author=False)
+            
+            if task_id not in sabnzbd_userid_log[ctx.author.id]:
+                return await ctx.reply('No task found which you initiated, with that task id.',mention_author=False)
+
+        res = await self.usenetbot.resume_task(task_id=task_id)
+        if res:
+            await ctx.reply(f'Successfully resumed task with task id : `{task_id}`',mention_author=False)
+        else:
+            await ctx.reply(f'No task found with task id : `{task_id}`',mention_author=False)
+
+    @commands.command(aliases=['cancel'])
+    @cog_check()
+    async def delete(self,ctx:commands.Context,task_id:str=None):
+        if not task_id:
+            return await ctx.send(f'Please send the task id of the task you want to cancel or delete along with the command. `{ctx.prefix}cancel SABnzbd_nzo_6w6458gv` . If the `_` convert the id to italics, no need to worry about it.')
+        task_id = task_id.replace('\\','')
+        if not ctx.author.id in SUDO_USERIDS:
+            if ctx.author.id not in sabnzbd_userid_log:
+                return await ctx.reply('No task found which you initiated....',mention_author=False)
+            
+            if task_id not in sabnzbd_userid_log[ctx.author.id]:
+                return await ctx.reply('No task found which you initiated, with that task id.',mention_author=False)
+
+        res = await self.usenetbot.delete_task(task_id=task_id)
+        if res:
+            await ctx.reply(f'Successfully cancelled task with task id : `{task_id}`',mention_author=False)
+        else:
+            await ctx.reply(f'No task found with task id : `{task_id}`',mention_author=False)
+
+    @commands.command()
+    @cog_check()
+    async def nzbmirror(self,ctx:commands.Context):
+        attachments = ctx.message.attachments
+        if len(attachments) == 0:
+            return await ctx.send('Please send one or multiple .nzb files along with this command.')
         
+        any_one_added = False
+        for nzb_file in attachments:
+            if not nzb_file.filename.endswith('.nzb'):
+                await ctx.send(f'`{nzb_file.filename}` is not a .nzb file')
+                continue
+            reply_msg = await ctx.reply('Adding nzb file please wait....',mention_author=False)
+            await nzb_file.save(fp=f'nzbfiles/{nzb_file.filename}')
 
+            res = await self.usenetbot.add_nzbfile(f'nzbfiles/{nzb_file.filename}')
+
+            if res['status']:
+                sabnzbd_userid_log.setdefault(ctx.author.id, []).append(res["nzo_ids"][0])
+                any_one_added = True
+                await reply_msg.edit(content=f"Your NZB file `{nzb_file.filename}` is successfuly Added in Queue.")
+            else:
+                reply_msg.edit(content=f"Something went wrong while processing your NZB file `{nzb_file.filename}`.")
+        if any_one_added:
+            asyncio.create_task(self.usenetbot.show_downloading_status(self.bot,ctx.channel.id, ctx.message))
+
+    @commands.command(aliases=['nzbgrab','nzbadd','grab'])
+    @cog_check()
+    async def grabid(self,ctx:commands.Context,*,nzbids:str=None):
+        if not nzbids:
+            return await ctx.send(f'Please also send a nzb id to grab ... `{ctx.prefix}grab 5501963429970569893`\nYou can also send multiple ids in one go. Just partition them with a space.')
+        nzbids = nzbids.strip()
+        nzbhydra_idlist = re.findall(r"-?\b[0-9]+\b", nzbids)
+        if not nzbhydra_idlist:
+            return await ctx.send("Please provide a proper ID.")
+        replymsg = await ctx.send("Adding your requested ID(s). Please Wait...")
+        success_taskids = []
+        for id in nzbhydra_idlist:
+            for nzburl in [
+                NZBHYDRA_URL_ENDPOINT.replace("replace_id", id),
+                NZBHYDRA_URL_ENDPOINT.replace("replace_id", f"-{id}"),
+            ]:
+                response = requests.head(nzburl)
+
+                if "Content-Disposition" in response.headers:
+                    result = await self.usenetbot.add_nzburl(nzburl)
+                    if result["status"]:
+                        success_taskids.append(result["nzo_ids"][0])
+
+        if success_taskids:
+            sabnzbd_userid_log.setdefault(ctx.author.id, []).extend(success_taskids)
+            asyncio.create_task(self.usenetbot.show_downloading_status(self.bot,ctx.channel.id,ctx.message))
+
+            await replymsg.delete()
+            return await ctx.reply(f"{len(success_taskids)} Tasks have been successfully added.", mention_author=False)
+
+        return await replymsg.edit(content="No task has been added.")
 
 async def setup(bot):
     await bot.add_cog(Usenet(bot))
