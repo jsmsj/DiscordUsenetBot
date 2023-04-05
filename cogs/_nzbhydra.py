@@ -43,8 +43,8 @@ class NzbHydra:
             time_str = humantime2(diff.total_seconds())
 
             ID = result[2]
-            if "-" in ID:
-                ID = ID.replace("-", "")
+            # if "-" in ID:
+            #     ID = ID.replace("-", "")
             message += f"<pre> COPY Me: {ID} Age: {time_str} ago </pre>\n"
             if index == 100:
                 break
