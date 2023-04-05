@@ -498,13 +498,23 @@ class Usenet(commands.Cog):
         success_taskids = []
         for id in nzbhydra_idlist:
             nzburl = NZBHYDRA_URL_ENDPOINT.replace("replace_id", id)
+
+            # for nzburl in [
+            #     NZBHYDRA_URL_ENDPOINT.replace("replace_id", id),
+            #     NZBHYDRA_URL_ENDPOINT.replace("replace_id", f"-{id}"),
+            # ]:
             response = requests.head(nzburl)
-            logger.info(f"response result: {response}")
+            print(nzburl)
+            print(response.content)
+            print(response.headers)
             if "Content-Disposition" in response.headers:
                 result = await self.usenetbot.add_nzburl(nzburl)
                 logger.info(f"Adding result: {result}")
+                
                 if result["status"]:
                     success_taskids.append(result["nzo_ids"][0])
+                else:
+                    logger.info(f"Unable To ADD from ID: {result}")
 
         if success_taskids:
             sabnzbd_userid_log.setdefault(ctx.author.id, []).extend(success_taskids)
