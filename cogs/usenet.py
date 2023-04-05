@@ -2,7 +2,8 @@
 import discord
 import requests
 from discord.ext import commands
-from main import logger,BotStartTime,scheduler
+from main import BotStartTime,scheduler
+from loggerfile import logger
 from cogs._helpers import SABNZBD_ENDPOINT,humantime,humanbytes,sudo_check,NZBHYDRA_ENDPOINT,NZBHYDRA_STATS_ENDPOINT,NZBHYDRA_URL_ENDPOINT
 import httpx
 import psutil
@@ -22,10 +23,6 @@ class UsenetHelper:
         self.SABNZBD_API = f"{SABNZBD_ENDPOINT}&output=json"
         self.client = httpx.AsyncClient(timeout=10)
         self.__number_of_blocks = 11
-
-        # progress bar ascii animation
-        self.__remaining_block_ascii = "▱"
-        self.__completed_block_ascii = "▰"
 
 
     def footer_message(self):
@@ -85,10 +82,10 @@ class UsenetHelper:
             status_embed.description = '**Downloading -**\n\n'
 
             for index, queue in enumerate(downloading_queue_list):
-                filled_blocks = round(
-                    int(queue["percentage"]) * self.__number_of_blocks / 100)
+                # filled_blocks = round(
+                #     int(queue["percentage"]) * self.__number_of_blocks / 100)
                 
-                unfilled_blocks = self.__number_of_blocks - filled_blocks
+                # unfilled_blocks = self.__number_of_blocks - filled_blocks
 
                 file_name = queue["filename"]
                 if re.search(r"(http|https)", file_name):
@@ -362,6 +359,7 @@ class Usenet(commands.Cog):
     @commands.command(name='status',aliases=['dstatus'])
     @cog_check()
     async def status_command(self,ctx:commands.Context):
+        logger.info(f'{ctx.author.name} ({ctx.author.id}) ran status command')
         reference = ctx.message.reference
         message = ctx.message
         if reference and reference.message_id:
@@ -374,6 +372,7 @@ class Usenet(commands.Cog):
     @cog_check()
     @sudo_check()
     async def resumeall(self,ctx):
+        logger.info(f'{ctx.author.name} ({ctx.author.id}) ran resumeall command')
         res = await self.usenetbot.resumeall_task()
         if res:
             await ctx.send('Resumed all tasks successfully')
@@ -384,6 +383,7 @@ class Usenet(commands.Cog):
     @cog_check()
     @sudo_check()
     async def pauseall(self,ctx):
+        logger.info(f'{ctx.author.name} ({ctx.author.id}) ran pauseall command')
         res = await self.usenetbot.pauseall_task()
         if res:
             await ctx.send('Paused all tasks successfully')
@@ -394,6 +394,7 @@ class Usenet(commands.Cog):
     @cog_check()
     @sudo_check()
     async def cancelall(self,ctx):
+        logger.info(f'{ctx.author.name} ({ctx.author.id}) ran cancelall command')
         res = await self.usenetbot.deleteall_task()
         if res:
             await ctx.send('Cancelled all tasks successfully')
@@ -415,6 +416,7 @@ class Usenet(commands.Cog):
                 return await ctx.reply('No task found which you initiated, with that task id.',mention_author=False)
 
         res = await self.usenetbot.pause_task(task_id=task_id)
+        logger.info(f'{ctx.author.name} ({ctx.author.id}) ran pause command for {task_id} which resulted in {"success" if res else "failure"}')
         if res:
             await ctx.reply(f'Successfully paused task with task id : `{task_id}`',mention_author=False)
         else:
@@ -435,6 +437,7 @@ class Usenet(commands.Cog):
                 return await ctx.reply('No task found which you initiated, with that task id.',mention_author=False)
 
         res = await self.usenetbot.resume_task(task_id=task_id)
+        logger.info(f'{ctx.author.name} ({ctx.author.id}) ran resume command for {task_id} which resulted in {"success" if res else "failure"}')
         if res:
             await ctx.reply(f'Successfully resumed task with task id : `{task_id}`',mention_author=False)
         else:
@@ -454,6 +457,7 @@ class Usenet(commands.Cog):
                 return await ctx.reply('No task found which you initiated, with that task id.',mention_author=False)
 
         res = await self.usenetbot.delete_task(task_id=task_id)
+        logger.info(f'{ctx.author.name} ({ctx.author.id}) ran delete command for {task_id} which resulted in {"success" if res else "failure"}')
         if res:
             await ctx.reply(f'Successfully cancelled task with task id : `{task_id}`',mention_author=False)
         else:
@@ -475,7 +479,7 @@ class Usenet(commands.Cog):
             await nzb_file.save(fp=f'nzbfiles/{nzb_file.filename}')
 
             res = await self.usenetbot.add_nzbfile(f'nzbfiles/{nzb_file.filename}')
-
+            logger.info(f'{ctx.author.name} ({ctx.author.id}) added nzb file ({nzb_file.filename}) which resulted in {"success" if res["status"] else "failure"}')
             if res['status']:
                 sabnzbd_userid_log.setdefault(ctx.author.id, []).append(res["nzo_ids"][0])
                 any_one_added = True
@@ -498,7 +502,6 @@ class Usenet(commands.Cog):
         success_taskids = []
         for id in nzbhydra_idlist:
             nzburl = NZBHYDRA_URL_ENDPOINT.replace("replace_id", id)
-
             # for nzburl in [
             #     NZBHYDRA_URL_ENDPOINT.replace("replace_id", id),
             #     NZBHYDRA_URL_ENDPOINT.replace("replace_id", f"-{id}"),
@@ -509,13 +512,13 @@ class Usenet(commands.Cog):
             print(response.headers)
             if "Content-Disposition" in response.headers:
                 result = await self.usenetbot.add_nzburl(nzburl)
-                logger.info(f"Adding result: {result}")
-                
+                print(result)
+                logger.info(f'{ctx.author.name} ({ctx.author.id}) added nzb id ({id}) which resulted in {"success" if result["status"] else "failure"} | {result}')   
                 if result["status"]:
                     success_taskids.append(result["nzo_ids"][0])
-                else:
-                    logger.info(f"Unable To ADD from ID: {result}")
+
             elif 'Retry-After' in response.headers:
+                logger.info(f'{ctx.author.name} ({ctx.author.id}) added nzb id ({id}) which resulted in failure due getting Retry-After.')   
                 await ctx.send(f'Unable to add {id} , got a retry after message. Retry after {str(response.headers.get("Retry-After"))} seconds <t:{round(datetime.datetime.now().timestamp()+int(response.headers.get("Retry-After")))}:R>')
 
         if success_taskids:

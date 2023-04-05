@@ -5,6 +5,7 @@ from cogs._nzbhydra import NzbHydra
 from cogs._config import *
 
 import cogs._helpers  as hp
+from loggerfile import logger
 
 
 def cog_check():
@@ -42,16 +43,20 @@ class UsenetSearch(commands.Cog):
         msg = await ctx.send(f'Searching for `{user_input}`\nPlease wait')
         output=None
         if cmd in ["nzbfind", "nzbsearch"]:
+            logger.info(f'{ctx.author.name} ({ctx.author.id}) did a nzbfind for {user_input}')
             output = await self.nzbhydra.query_search(user_input)
 
         elif cmd in ["movie", "movies"]:
             if re.search("^tt[0-9]*$", user_input):
+                logger.info(f'{ctx.author.name} ({ctx.author.id}) did a imdb movie search for {user_input}')
                 output = await self.nzbhydra.imdb_movie_search(user_input)
 
             elif imdbid := re.search(r".+(tt\d+)", user_input):
                 try:
+                    logger.info(f'{ctx.author.name} ({ctx.author.id}) did a imdb movie search for {user_input}')
                     output = await self.nzbhydra.imdb_movie_search(imdbid.group(1))
                 except:
+                    logger.info(f'{ctx.author.name} ({ctx.author.id}) did a movie search for {user_input}')
                     output = await self.nzbhydra.movie_search(user_input)
 
             else:
@@ -59,15 +64,19 @@ class UsenetSearch(commands.Cog):
 
         elif cmd in ["series", "tv"]:
             if re.search("^tt[0-9]*$", user_input):
+                logger.info(f'{ctx.author.name} ({ctx.author.id}) did a imdb series search for {user_input}')
                 output = await self.nzbhydra.imdb_series_search(user_input)
 
             elif imdbid := re.search(r".+(tt\d+)", user_input):
                 try:
+                    logger.info(f'{ctx.author.name} ({ctx.author.id}) did a imdb series search for {user_input}')
                     output = await self.nzbhydra.imdb_series_search(imdbid.group(1))
                 except:
+                    logger.info(f'{ctx.author.name} ({ctx.author.id}) did a series search for {user_input}')
                     output = await self.nzbhydra.series_search(user_input)
 
             else:
+                logger.info(f'{ctx.author.name} ({ctx.author.id}) did a series search for {user_input}')
                 output = await self.nzbhydra.series_search(user_input)
 
         if not output:
@@ -84,7 +93,7 @@ class UsenetSearch(commands.Cog):
     async def indexers(self,ctx:commands.Context):
         replymsg = await ctx.send("Fetching list....")
         indexers = await self.nzbhydra.list_indexers()
-
+        logger.info(f'{ctx.author.name} ({ctx.author.id}) ran command for listing indexers')
         if indexers:
             return await replymsg.edit(content=indexers)
 

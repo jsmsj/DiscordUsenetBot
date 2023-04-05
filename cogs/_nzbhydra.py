@@ -4,6 +4,7 @@ import httpx
 import requests
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
+from loggerfile import logger
 
 from cogs._helpers import humanbytes,NZBHYDRA_ENDPOINT, NZBHYDRA_STATS_ENDPOINT,humantime2
 
@@ -32,6 +33,9 @@ class NzbHydra:
 
         title = f"<strong> NZB Search Results for: {query}</strong>\n\n"
         message = "<hr>\n"
+        if len(search_result) == 0:
+            logger.info(f'Searched for {query} found 0 results....')
+            return None
         for index, result in enumerate(search_result):
             message += f"<strong>{result[0]}</strong> "
             message += f"[{result[1]}]\n"
@@ -58,30 +62,31 @@ class NzbHydra:
     async def query_search(self, query):
         response = await self.client.get(
             self.NZBHYDRA_ENDPOINT, params={"t": "search", "q": query})
-        
+        logger.info(f'Searching (nzb_id) for {query}')
         return self.parse_xml(response.text, query)
 
     async def movie_search(self, query):
         response = await self.client.get(
             self.NZBHYDRA_ENDPOINT, params={"t": "movie", "q": query})
-        
+        logger.info(f'Searching (movie) for {query}')
         return self.parse_xml(response.text, query)
 
     async def series_search(self, query):
         response = await self.client.get(
             self.NZBHYDRA_ENDPOINT, params={"t": "tvsearch", "q": query})
-        
+        logger.info(f'Searching (series) for {query}')
         return self.parse_xml(response.text, query)
 
     async def imdb_movie_search(self, imdbid):
         response = await self.client.get(
             self.NZBHYDRA_ENDPOINT, params={"t": "movie", "imdbid": imdbid})
-        
+        logger.info(f'Searching (imdb movie) for {imdbid}')
         return self.parse_xml(response.text, imdbid)
 
     async def imdb_series_search(self, imdbid):
         response = await self.client.get(
             self.NZBHYDRA_ENDPOINT, params={"t": "tvsearch", "imdbid": imdbid})
+        logger.info(f'Searching (imdb series) for {imdbid}')
         
         return self.parse_xml(response.text, imdbid)
 

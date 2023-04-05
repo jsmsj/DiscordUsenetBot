@@ -9,17 +9,7 @@ import traceback
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import asyncio
 import datetime
-
-if os.path.exists('log.txt'):
-    with open('log.txt', 'r+') as f:
-        f.truncate(0)
-
-logging.basicConfig(format='%(asctime)s,%(msecs)03d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
-                    datefmt='%Y-%m-%d:%H:%M:%S',
-                    handlers=[logging.FileHandler('log.txt'), logging.StreamHandler()],
-                    level=logging.INFO)
-
-logger = logging.getLogger(__name__)
+from loggerfile import logger
 
 intents = discord.Intents.all()
 
@@ -41,6 +31,7 @@ async def on_command_error(ctx:commands.Context,error):
     if isinstance(error,commands.CommandNotFound):
         return
     if isinstance(error,commands.CheckFailure):
+        logger.info(f'{ctx.author.name} ({ctx.author.id}) ran {ctx.command.name} but was unable to run it due to checkfailure.')
         return await ctx.send('Cannot use this command here.... or you are not authorised to run this command.')
     else:
         logger.warning(error,exc_info=True)
