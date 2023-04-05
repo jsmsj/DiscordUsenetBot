@@ -1,4 +1,8 @@
+#!/usr/bin/python3
+
+from logging.handlers import RotatingFileHandler
 import subprocess
+import logging
 import requests
 import shutil
 import sys
@@ -9,9 +13,6 @@ import base64
 
 DISCORD_NOTIFICATION_WEBHOOK_URL = ""
 SHOW_DRIVE_LINK = False
-
-
-
 
 def b64e(s):
     return base64.urlsafe_b64encode(s.encode()).decode()
@@ -44,15 +45,27 @@ except:
 
 
 # log file path of sabnzbd log.
-LOGFILE_PATH = "/home/server/.sabnzbd/logs/sabnzbd.log"
+LOGFILE_PATH = "/home/master/.config/sabnzbd/logs/sabnzbd.log"
 
 #Rclone upload directory and flags.  
-RCLONE_REMOTE_NAME = "usenet"
+RCLONE_REMOTE_NAME = ""
 RCLONE_DIRECTORY_NAME = "UsenetUpload"  # leave empty if there isn't one.
 RCLONE_UPLOAD_DIRECTORY = directory.split("/")[-1]
 DRIVE_UPLOAD_DIRECTORY = f"{RCLONE_REMOTE_NAME}:{RCLONE_DIRECTORY_NAME}/{RCLONE_UPLOAD_DIRECTORY}"
 
-rclone_command = f"rclone copy -v --stats=1s --stats-one-line --drive-chunk-size=256M --fast-list --transfers=1 --exclude _UNPACK_*/** --exclude _FAILED_*/** --exclude *.rar '{directory}' '{DRIVE_UPLOAD_DIRECTORY}' "
+rclone_command = f"gclone copy -v --stats=1s --stats-one-line --drive-chunk-size=256M --fast-list --transfers=1 --exclude _UNPACK_*/** --exclude _FAILED_*/** --exclude *.rar '{directory}' '{DRIVE_UPLOAD_DIRECTORY}' "
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(message)s",
+    handlers=[
+        RotatingFileHandler(LOGFILE_PATH, mode="w+", maxBytes=5000000, backupCount=10),
+        logging.StreamHandler()])
+
+
+def LOGGER(name: str) -> logging.Logger:
+    return logging.getLogger(name)
 
 
 def get_readable_bytes(size: str) -> str:
@@ -99,10 +112,10 @@ def run_command(command):
             if output != "":
                 if ":" in output:
                     output = output.split(":")[-1].strip()
-                # LOGGER(__name__).info(f"Uploading to drive: {output}")
+                LOGGER(__name__).info(f"Uploading to drive: {output}")
 
             if output == "" and proc.poll() is not None:
-                # LOGGER(__name__).info("File has been successfully uploaded to gdrive.")
+                LOGGER(__name__).info("File has been successfully uploaded to gdrive.")
                 break
 
 
@@ -148,6 +161,6 @@ if SHOW_DRIVE_LINK:
 
 
 notification_message = (
-    f"`🗂 {jobname}`n\n{file_size} | Success | {drive_link}")
+    f"`🗂 {jobname}`\n\n{file_size} | Success | {drive_link}")
 
 webhook_notification(message=notification_message)
