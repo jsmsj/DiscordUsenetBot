@@ -515,6 +515,8 @@ class Usenet(commands.Cog):
                     success_taskids.append(result["nzo_ids"][0])
                 else:
                     logger.info(f"Unable To ADD from ID: {result}")
+            elif 'Retry-After' in response.headers:
+                await ctx.send(f'Unable to add {id} , got a retry after message. Retry after {str(response.headers.get("Retry-After"))} seconds <t:{round(datetime.datetime.now().timestamp()+int(response.headers.get("Retry-After")))}:R>')
 
         if success_taskids:
             sabnzbd_userid_log.setdefault(ctx.author.id, []).extend(success_taskids)
