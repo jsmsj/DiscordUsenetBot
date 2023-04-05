@@ -4,7 +4,7 @@ import requests
 from discord.ext import commands
 from main import BotStartTime,scheduler
 from loggerfile import logger
-from cogs._helpers import SABNZBD_ENDPOINT,humantime,humanbytes,sudo_check,NZBHYDRA_ENDPOINT,NZBHYDRA_STATS_ENDPOINT,NZBHYDRA_URL_ENDPOINT
+from cogs._helpers import SABNZBD_ENDPOINT,humantime,humanbytes,sudo_check,NZBHYDRA_ENDPOINT,NZBHYDRA_STATS_ENDPOINT,NZBHYDRA_URL_ENDPOINT,remove_private_stuff
 import httpx
 import psutil
 import time
@@ -118,7 +118,7 @@ class UsenetHelper:
                 status_embed.description += '━━━━━━━━━━━━━━━━━━━━\n'
 
             # status_page += "**Post Processing -**\n\n"
-            status_embed.description += "**Post Processing -\n\n**"
+            status_embed.description += "**Post Processing -**\n\n"
             for index, history in enumerate(postprocessing_queue_list):
 
                 file_name = history["name"]
@@ -128,19 +128,19 @@ class UsenetHelper:
                 # status_page += f"**🗂 FileName :** {file_name}\n"
                 # status_page += f"**Status :** {history['status']}\n"
                 
-                status_embed.description += f"**🗂 FileName :** {file_name}\n" \
-                                            f"**Status :** {history['status']}\n"
+                status_embed.description += f"**🗂 FileName :** `{file_name}`\n" \
+                                            f"**Status :** `{history['status']}`\n"
 
                 action = history.get("action_line")
                 if isinstance(action, list):
                     # status_page += f"**Action :** {action[0]}\n"
-                    status_embed.description += f"**Action :** {action[0]}\n"
+                    status_embed.description += f"**Action :** ```\n{action[0]}\n```\n"
 
                 if action and "Running script:" in action:
                     action = action.replace("Running script:", "")
                     # status_page += f"**Action :** {action.strip()}\n"
 
-                    status_embed.description += f"**Action :** {action.strip()}\n"
+                    status_embed.description += f"**Action :** ```\n{action.strip()}\n```\n"
 
                 if index == 4 and len(postprocessing_queue_list) > 4:
                     # status_page += f"\n**+ Extra Queued Task...**\n\n"
@@ -251,10 +251,10 @@ class UsenetHelper:
         # await status_message.delete()
         excess = ''
         if kwargs.get('jump_url'):
-            excess+=f'\n[Latest Message]({kwargs.get("jump_url")})'
+            excess+=f':\n[Latest Message]({kwargs.get("jump_url")})'
         
         em = discord.Embed(title='📊 Status',color=discord.Color.green())
-        em.description = f'See the latest message for status....{excess}'
+        em.description = f'No Current Tasks or see the latest status message{excess}'
         await status_message.edit(content='',embed=em)
         # except Exception as e:
         #     pass  # passing errors like status message deleted.
@@ -319,7 +319,7 @@ class UsenetHelper:
             try:
                 await status_message.edit(content=status_page,embed=status_embed)
             except Exception as e:
-                print(e)
+                logger.warn('edit_status_msg_exception\n'+str(e))
                 await self.clear_progresstask(status_message, message.id)
 
         scheduler.add_job(
@@ -495,11 +495,12 @@ class Usenet(commands.Cog):
         if not nzbids:
             return await ctx.send(f'Please also send a nzb id to grab ... `{ctx.prefix}grab 5501963429970569893`\nYou can also send multiple ids in one go. Just partition them with a space.')
         nzbids = nzbids.strip()
-        nzbhydra_idlist = re.findall(r"-?\b[0-9]+\b", nzbids)
+        nzbhydra_idlist = nzbids.split(" ")
         if not nzbhydra_idlist:
             return await ctx.send("Please provide a proper ID.")
         replymsg = await ctx.send("Adding your requested ID(s). Please Wait...")
         success_taskids = []
+        # print(nzbhydra_idlist)
         for id in nzbhydra_idlist:
             nzburl = NZBHYDRA_URL_ENDPOINT.replace("replace_id", id)
             # for nzburl in [
@@ -507,19 +508,25 @@ class Usenet(commands.Cog):
             #     NZBHYDRA_URL_ENDPOINT.replace("replace_id", f"-{id}"),
             # ]:
             response = requests.head(nzburl)
-            print(nzburl)
-            print(response.content)
-            print(response.headers)
             if "Content-Disposition" in response.headers:
                 result = await self.usenetbot.add_nzburl(nzburl)
-                print(result)
-                logger.info(f'{ctx.author.name} ({ctx.author.id}) added nzb id ({id}) which resulted in {"success" if result["status"] else "failure"} | {result}')   
+                # print(result)
+                logger.info(f'{ctx.author.name} ({ctx.author.id}) added nzb id ({id}) which resulted in {"success" if result["status"] else "failure"} | {result} | 1')   
                 if result["status"]:
                     success_taskids.append(result["nzo_ids"][0])
 
             elif 'Retry-After' in response.headers:
                 logger.info(f'{ctx.author.name} ({ctx.author.id}) added nzb id ({id}) which resulted in failure due getting Retry-After.')   
                 await ctx.send(f'Unable to add {id} , got a retry after message. Retry after {str(response.headers.get("Retry-After"))} seconds <t:{round(datetime.datetime.now().timestamp()+int(response.headers.get("Retry-After")))}:R>')
+            else:
+                r2 = requests.get(nzburl)
+                if "Content-Disposition" in r2.headers:
+                    result2 = await self.usenetbot.add_nzburl(nzburl)
+                    logger.info(f'{ctx.author.name} ({ctx.author.id}) added nzb id ({id}) which resulted in {"success" if result2["status"] else "failure"} | {result2} | 2')   
+                    if result2["status"]:
+                        success_taskids.append(result2["nzo_ids"][0])
+                else:
+                    await ctx.send(f'Some error has occured. \n Details: ```\n{remove_private_stuff(str(nzburl))}\n\n{remove_private_stuff(str(r2.content))}\n\n{remove_private_stuff(str(r2.headers))}```')
 
         if success_taskids:
             sabnzbd_userid_log.setdefault(ctx.author.id, []).extend(success_taskids)

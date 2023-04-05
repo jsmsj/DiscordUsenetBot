@@ -8,6 +8,11 @@ import sys
 from httpx import AsyncClient
 from discord.ext import commands
 
+def remove_private_stuff(txt:str):
+    for variable in all_variables:
+        txt = txt.replace(variable,'SECRET')
+    return txt
+
 def embed(title,description): #,url=None
     em = discord.Embed(title=title,description=description,color=discord.Color.green(),timestamp=datetime.now())
     # em.set_footer(text="")
