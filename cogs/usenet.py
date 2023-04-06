@@ -21,24 +21,24 @@ sabnzbd_userid_log = TTLCache(maxsize=128, ttl=600)
 class UsenetHelper:
     def __init__(self) -> None:
         self.SABNZBD_API = f"{SABNZBD_ENDPOINT}&output=json"
-        self.client = httpx.AsyncClient(timeout=10)
-        self.__number_of_blocks = 11
+        self.client = httpx.AsyncClient(timeout=20)
 
 
-    def footer_message(self):
+    def footer_message(self):  #TODO speed calc for footer
         # calculating system speed per seconds.
-        net_io_counters = psutil.net_io_counters()
-        bytes_sent = net_io_counters.bytes_sent
-        bytes_recv = net_io_counters.bytes_recv
+        # net_io_counters = psutil.net_io_counters()
+        # bytes_sent = net_io_counters.bytes_sent
+        # bytes_recv = net_io_counters.bytes_recv
 
-        time.sleep(1)
+        # time.sleep(1)
 
-        net_io_counters = psutil.net_io_counters()
-        download_speed = net_io_counters.bytes_recv - bytes_recv
-        upload_speed = net_io_counters.bytes_sent - bytes_sent
+        # net_io_counters = psutil.net_io_counters()
+        # download_speed = net_io_counters.bytes_recv - bytes_recv
+        # upload_speed = net_io_counters.bytes_sent - bytes_sent
 
         botuptime = humantime((datetime.datetime.utcnow()-BotStartTime).total_seconds())
-        msg = f"🟢 DL: {humanbytes(download_speed)}/s 🟡 UL: {humanbytes(upload_speed)}/s | ⌚ Uptime: {botuptime}"
+        # msg = f"🟢 DL: {humanbytes(download_speed)}/s 🟡 UL: {humanbytes(upload_speed)}/s | ⌚ Uptime: {botuptime}"
+        msg = f"⌚ Uptime: {botuptime}"
         return msg
     
     def show_progress_still(self,percent:int,width:int=20):
@@ -78,14 +78,11 @@ class UsenetHelper:
         status_embed.description = ''
 
         if downloading_queue_list:
-            # status_page += "**Downloading -\n\n**"
+
             status_embed.description = '**Downloading -**\n\n'
 
             for index, queue in enumerate(downloading_queue_list):
-                # filled_blocks = round(
-                #     int(queue["percentage"]) * self.__number_of_blocks / 100)
-                
-                # unfilled_blocks = self.__number_of_blocks - filled_blocks
+
 
                 file_name = queue["filename"]
                 if re.search(r"(http|https)", file_name):
@@ -94,30 +91,19 @@ class UsenetHelper:
                                             f"**{queue['sizeleft']}** remaining of **{queue['size']}**\n" \
                                             f"**Status:** {queue['status']} | **ETA:** {queue['timeleft']}\n" \
                                             f"**Task ID:** `{queue['nzo_id']}`\n━━━━━━━━━━━━━━━━━━━━\n"
-                # status_page += f"**🗂 FileName:** {file_name}\n"
-                # status_page += f"**{queue['percentage']}%**  `[{self.__completed_block_ascii * filled_blocks}{self.__remaining_block_ascii * unfilled_blocks}]`\n"
-                # status_page += (
-                #     f"**{queue['sizeleft']}** remaining of **{queue['size']}**\n")
-                
-                # status_page += (
-                #     f"**Status:** {queue['status']} | **ETA:** {queue['timeleft']}\n")
-                
-                # status_page += f"**Task ID:** `{queue['nzo_id']}`\n\n"
 
                 if index == 4 and len(downloading_queue_list) > 4:
-                    # status_page += f"**+ {max(len(downloading_queue_list)-4, 0)} Ongoing Task...**\n\n"
+
                     status_embed.description += f"**+ {max(len(downloading_queue_list)-4, 0)} Ongoing Tasks...**\n\n"
                     break
 
 
 
         if postprocessing_queue_list:
-            # if status_page:
-            #     status_page += "━━━━━━━━━━━━━━━━━━━━\n"
+
             if status_embed.description not in ['',None]:
                 status_embed.description += '━━━━━━━━━━━━━━━━━━━━\n'
 
-            # status_page += "**Post Processing -**\n\n"
             status_embed.description += "**Post Processing -**\n\n"
             for index, history in enumerate(postprocessing_queue_list):
 
@@ -125,34 +111,25 @@ class UsenetHelper:
                 if re.search(r"(http|https)", file_name):
                     file_name = "N/A"
 
-                # status_page += f"**🗂 FileName :** {file_name}\n"
-                # status_page += f"**Status :** {history['status']}\n"
                 
                 status_embed.description += f"**🗂 FileName :** `{file_name}`\n" \
                                             f"**Status :** `{history['status']}`\n"
 
                 action = history.get("action_line")
                 if isinstance(action, list):
-                    # status_page += f"**Action :** {action[0]}\n"
+
                     status_embed.description += f"**Action :** ```\n{action[0]}\n```\n"
 
                 if action and "Running script:" in action:
                     action = action.replace("Running script:", "")
-                    # status_page += f"**Action :** {action.strip()}\n"
 
                     status_embed.description += f"**Action :** ```\n{action.strip()}\n```\n"
 
                 if index == 4 and len(postprocessing_queue_list) > 4:
-                    # status_page += f"\n**+ Extra Queued Task...**\n\n"
+
                     status_embed.description+= f"\n**+ Extra Queued Task...**\n\n"
                     break
                 
-                # status_page += "\n"
-
-        # if status_page:
-        #     status_page += "━━━━━━━━━━━━━━━━━━━━\n"
-        #     status_page += self.footer_message()
-
         if status_embed.description not in ['',None]:
             status_embed.set_footer(text=self.footer_message())
 
@@ -540,3 +517,5 @@ class Usenet(commands.Cog):
 async def setup(bot):
     await bot.add_cog(Usenet(bot))
     print("Usenet cog is loaded")
+
+discord.Color.green()

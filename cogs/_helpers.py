@@ -77,7 +77,7 @@ async def katbin_paste(text: str) -> str:
     try:
         paste_post = await client.post(
             katbin_url,
-            json={"paste": {"content": f"{text}"}})
+            json={"paste": {"content": f"{text}"}},timeout=None)
         
         paste_post = paste_post.json()
         

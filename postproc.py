@@ -9,6 +9,7 @@ import sys
 import os
 import re
 import base64
+import datetime
 
 
 DISCORD_NOTIFICATION_WEBHOOK_URL = ""
@@ -82,12 +83,41 @@ def get_readable_bytes(size: str) -> str:
     return f"{str(round(size, 2))} {dict_power_n[raised_to_pow]}B"
 
 
-def webhook_notification(message:str):
-    data = {
-        "content": message,
-        "embeds": None,
-        "attachments": []
+def webhook_notification(message:str,**kwargs):
+    if kwargs.get('primitive'):
+        data = {
+            "content": message,
+            "embeds": None,
+            "attachments": []
+        }
+    else:
+        now = datetime.datetime.now(datetime.timezone.utc)
+        time_str = now.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        data = {
+    "content": None,
+    "embeds": [
+        {
+        "title": "New Upload !!!",
+        "description": f"**{kwargs.get('filename')}** has been uploaded to drive.",
+        "color": 3066993,
+        "fields": [  
+            {
+            "name": "Size",
+            "value": f"**{kwargs.get('file_size')}**"
+            },
+            {
+            "name": "Location",
+            "value": "**[FlightClub Contrib] / UsenetUpload /**"
+            }
+        ],
+        "timestamp": f"{time_str}"
+        }
+    ],
+    "username": "FlightClubUsenetBot",
+    "avatar_url": "https://i.imgur.com/ly52aG7.png",
+    "attachments": []
     }
+    
     headers = {
         'Content-Type': 'application/json'
     }
@@ -96,6 +126,13 @@ def webhook_notification(message:str):
 
     if response.status_code == 204:
         sys.exit(0)
+    else:
+        if not kwargs.get('primitive'):
+            data.pop("timestamp")
+            response:requests.Response = requests.post(DISCORD_NOTIFICATION_WEBHOOK_URL,headers=headers,json=data)
+            if response.status_code == 204:
+                sys.exit(0)
+
 
     print("Something happened.....")
     sys.exit(1)
@@ -133,7 +170,7 @@ reasons = {
 if str(postprocstatus) in reasons:
     reason = reasons[postprocstatus]
     notification_message = f"`🗂 {jobname}`\n\n{reason} "
-    webhook_notification(message=notification_message)
+    webhook_notification(message=notification_message,primitive=True)
     sys.exit(1)
 
 
@@ -163,4 +200,4 @@ if SHOW_DRIVE_LINK:
 notification_message = (
     f"`🗂 {jobname}`\n\n{file_size} | Success | {drive_link}")
 
-webhook_notification(message=notification_message)
+webhook_notification(message=None, filename=jobname,file_size=file_size)

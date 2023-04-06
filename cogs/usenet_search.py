@@ -35,9 +35,12 @@ class UsenetSearch(commands.Cog):
 
     @commands.command()
     @cog_check()
-    async def search(self,ctx:commands.Context,cmd:str=None,*,user_input:str=None):
+    async def search(self,ctx:commands.Context,cmd:str='',*,user_input:str=''):
         commands = ['nzbfind','nzbsearch','movie','movies',"series", "tv"]
-        if not cmd or not cmd.lower() in commands: return await ctx.send(f'No search term provided. Correct Usage: `{ctx.prefix}search command your query` where command can be: `{" , ".join(commands)}`')
+        if not cmd : return await ctx.send(f'No search term provided. Correct Usage: `{ctx.prefix}search command your query` where command can be: `{" , ".join(commands)}`')
+        if not cmd.lower() in commands:
+            user_input = cmd+ ' ' + user_input
+            cmd = 'nzbfind'
         cmd = cmd.lower()
         if not user_input: return await ctx.send(f'No search term provided. Correct Usage: `{ctx.prefix}search command your query` where command can be: `{" , ".join(commands)}`')
         msg = await ctx.send(f'Searching for `{user_input}`\nPlease wait')
