@@ -82,8 +82,42 @@ def get_readable_bytes(size: str) -> str:
         raised_to_pow += 1
     return f"{str(round(size, 2))} {dict_power_n[raised_to_pow]}B"
 
+def convert_bytes_to_size(bytes: str) -> str:
+    """
+    Convert bytes (given as a string) to human-readable size in KB, MB, GB, or TB.
+    """
+    sizes = ["B", "KB", "MB", "GB", "TB"]
+    if not bytes.isdigit():
+        raise ValueError("Input must be a positive integer")
+    bytes = int(bytes)
+    if bytes == 0:
+        return "0 B"
+    idx = min(4, int(math.log(bytes, 1024)))
+    size = bytes / (1024 ** idx)
+    return f"{size:.2f} {sizes[idx]}"
 
-def webhook_notification(message:str,**kwargs):
+
+def webhook_notification(message:str):
+    data = {
+        "content": message,
+        "embeds": None,
+        "attachments": [],
+	"username": "FlightClubUsenetBot",
+    	"avatar_url": "https://i.imgur.com/ly52aG7.png"
+    }
+    headers = {
+        'Content-Type': 'application/json'
+    }
+    
+    response:requests.Response = requests.post(DISCORD_NOTIFICATION_WEBHOOK_URL,headers=headers,json=data)
+
+    if response.status_code == 204:
+        sys.exit(0)
+
+    print("Something happened.....")
+    sys.exit(1)
+
+def webhook_notification_embed(message:str,**kwargs):
     if kwargs.get('primitive'):
         data = {
             "content": message,
@@ -198,6 +232,7 @@ if SHOW_DRIVE_LINK:
 
 
 notification_message = (
-    f"`🗂 {jobname}`\n\n{file_size} | Success | {drive_link}")
+    f"`📁 {jobname}`\n\n{file_size} | Success |{drive_link}")
 
-webhook_notification(message=None, filename=jobname,file_size=file_size)
+# webhook_notification(message=None, filename=jobname,file_size=file_size)
+webhook_notification(message=notification_message)
