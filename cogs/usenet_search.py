@@ -87,8 +87,8 @@ class UsenetSearch(commands.Cog):
         
             await msg.edit(content=output)
         else:
-            telegraph_url = await hp.telegraph_paste(content=output(0))
-            await msg.edit(content=f'Found {output(1)} Results\n{telegraph_url}')
+            telegraph_url = await hp.telegraph_paste(content=output[0])
+            await msg.edit(content=f'Found {output[1]} Results\n{telegraph_url}')
 
     # @commands.command()
     # @cog_check()
