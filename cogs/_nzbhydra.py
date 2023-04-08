@@ -56,7 +56,7 @@ class NzbHydra:
 
         if message:
             html_content = title + message
-            return html_content
+            return (html_content, index)
         return None
 
     async def query_search(self, query):
