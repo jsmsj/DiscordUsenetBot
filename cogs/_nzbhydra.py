@@ -32,6 +32,7 @@ class NzbHydra:
         ]
 
         title = f"<h4> NZB Search Results for: {query}</h4>\n"
+        message = ""
         if len(search_result) == 0:
             logger.info(f'Searched for {query} found 0 results....')
             return None
