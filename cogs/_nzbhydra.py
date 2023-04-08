@@ -31,8 +31,7 @@ class NzbHydra:
             for item in channel.findall("item")
         ]
 
-        title = f"<strong> NZB Search Results for: {query}</strong>\n\n"
-        message = "<hr>\n"
+        title = f"<h4> NZB Search Results for: {query}</h4>\n"
         if len(search_result) == 0:
             logger.info(f'Searched for {query} found 0 results....')
             return None
@@ -50,7 +49,7 @@ class NzbHydra:
 
             # if "-" in ID:
             #     ID = ID.replace("-", "")
-            message += f"<pre> COPY Me: {ID} Age: {time_str} ago </pre>\n"
+            message += f"<code> COPY Me: {ID} Age: {time_str} ago </code>\n"
             if index == 100:
                 break
 
