@@ -479,11 +479,14 @@ class Usenet(commands.Cog):
         success_taskids = []
         # print(nzbhydra_idlist)
         for id in nzbhydra_idlist:
+            # Make sure that we are getting a number and not letters..
+            if id.startswith("-"):
+              if not id.split("-")[1].isnumeric():
+                return await ctx.send("Please provide a proper ID.")
+            elif not id.isnumeric():
+              return await ctx.send("Please provide a proper ID.")
+            
             nzburl = NZBHYDRA_URL_ENDPOINT.replace("replace_id", id)
-            # for nzburl in [
-            #     NZBHYDRA_URL_ENDPOINT.replace("replace_id", id),
-            #     NZBHYDRA_URL_ENDPOINT.replace("replace_id", f"-{id}"),
-            # ]:
             response = requests.head(nzburl)
             if "Content-Disposition" in response.headers:
                 result = await self.usenetbot.add_nzburl(nzburl)
