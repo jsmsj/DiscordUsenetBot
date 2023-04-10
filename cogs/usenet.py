@@ -488,7 +488,7 @@ class Usenet(commands.Cog):
             
             nzburl = NZBHYDRA_URL_ENDPOINT.replace("replace_id", id)
             response = requests.head(nzburl)
-            logger.info(f'requests.head response -> {response.headers} / {response.content} / {response.json()}')
+            logger.info(f'requests.head response -> {response.headers} / {response.content}')
             if "Content-Disposition" in response.headers:
                 result = await self.usenetbot.add_nzburl(nzburl)
                 # print(result)
