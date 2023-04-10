@@ -488,10 +488,11 @@ class Usenet(commands.Cog):
             
             nzburl = NZBHYDRA_URL_ENDPOINT.replace("replace_id", id)
             response = requests.head(nzburl)
+            logger.info(f'requests.head response -> {response.headers} / {response.content} / {response.json()}')
             if "Content-Disposition" in response.headers:
                 result = await self.usenetbot.add_nzburl(nzburl)
                 # print(result)
-                logger.info(f'{ctx.author.name} ({ctx.author.id}) added nzb id ({id}) which resulted in {"success" if result["status"] else "failure"} | {result} | 1')   
+                logger.info(f'[HEAD] {ctx.author.name} ({ctx.author.id}) added nzb id ({id}) which resulted in {"success" if result["status"] else "failure"} | {result} | 1')   
                 if result["status"]:
                     success_taskids.append(result["nzo_ids"][0])
 
@@ -502,7 +503,7 @@ class Usenet(commands.Cog):
                 r2 = requests.get(nzburl)
                 if "Content-Disposition" in r2.headers:
                     result2 = await self.usenetbot.add_nzburl(nzburl)
-                    logger.info(f'{ctx.author.name} ({ctx.author.id}) added nzb id ({id}) which resulted in {"success" if result2["status"] else "failure"} | {result2} | 2')   
+                    logger.info(f'[GET] {ctx.author.name} ({ctx.author.id}) added nzb id ({id}) which resulted in {"success" if result2["status"] else "failure"} | {result2} | 2')   
                     if result2["status"]:
                         success_taskids.append(result2["nzo_ids"][0])
                 else:
