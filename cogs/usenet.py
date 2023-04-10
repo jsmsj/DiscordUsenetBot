@@ -520,7 +520,9 @@ class Usenet(commands.Cog):
 
             await replymsg.delete()
             
-            await asyncio.sleep(2)
+            # This is to make sure the nzb's have been added to sabnzbd
+            # TODO: Find a better way and more dynamic way to handle it.
+            await asyncio.sleep(10) 
             file_names = await self.usenetbot.get_file_names(success_taskids)
             print(f'file_names={file_names}')
             
