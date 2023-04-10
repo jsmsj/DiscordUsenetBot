@@ -136,6 +136,22 @@ class UsenetHelper:
 
         return '',status_embed
     
+    async def get_file_names(self, task_ids):
+        print(f"Recieved get_file_names({task_ids})")
+        file_names = []
+        for task_id in task_ids:
+            task = await self.get_task(task_id)
+            print(f"recieved task: {task}")
+            file_name = task[0]['filename']
+            while (re.search(r"(http|https)", file_name)):
+                await asyncio.sleep(1)
+                task = await self.get_task(task_id)
+                file_name = task[0]["filename"]
+            if not re.search(r"(http|https)", file_name):
+                file_names.append(file_name)
+        print(f"File names retrieved: {file_names}")
+        return file_names
+
     async def check_task(self, task_id):
         response = await self.client.get(
             self.SABNZBD_API, params={"mode": "queue", "nzo_ids": task_id})
@@ -148,7 +164,7 @@ class UsenetHelper:
             self.SABNZBD_API, params={"mode": "queue", "nzo_ids": task_id})
         
         response = response.json()
-        return bool(response["queue"]["slots"])
+        return response["queue"]["slots"]
 
     async def resume_task(self, task_id):
         isValidTaskID = await self.check_task(task_id)
@@ -503,7 +519,14 @@ class Usenet(commands.Cog):
             asyncio.create_task(self.usenetbot.show_downloading_status(self.bot,ctx.channel.id,ctx.message))
 
             await replymsg.delete()
-            return await ctx.reply(f"{len(success_taskids)} Tasks have been successfully added.", mention_author=False)
+            
+            await asyncio.sleep(2)
+            file_names = await self.usenetbot.get_file_names(success_taskids)
+            print(f'file_names={file_names}')
+            
+            formatted_file_names = "\n".join(["`" + s + "`" for s in file_names])
+            print(f'formatted_file_names={formatted_file_names}')
+            return await ctx.reply(f"Following files were added to queue:\n{formatted_file_names} ", mention_author=False)
 
         return await replymsg.edit(content="No task has been added.")
 
