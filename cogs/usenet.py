@@ -141,6 +141,9 @@ class UsenetHelper:
         file_names = []
         for task_id in task_ids:
             task = await self.get_task(task_id)
+            if len(task) == 0:
+              await asyncio.sleep(1)
+              task = await self.get_task(task_id)
             print(f"recieved task: {task}")
             file_name = task[0]['filename']
             while (re.search(r"(http|https)", file_name)):
@@ -491,7 +494,7 @@ class Usenet(commands.Cog):
         nzbhydra_idlist = nzbids.split(" ")
         if not nzbhydra_idlist:
             return await ctx.send("Please provide a proper ID.")
-        replymsg = await ctx.send("Adding your requested ID(s). Please Wait...")
+        replymsg = await ctx.reply("Adding your requested ID(s). Please Wait...", mention_author=False)
         success_taskids = []
         for id in nzbhydra_idlist:
             # Make sure that we are getting a number and not letters..
@@ -518,17 +521,17 @@ class Usenet(commands.Cog):
             sabnzbd_userid_log.setdefault(ctx.author.id, []).extend(success_taskids)
             # asyncio.create_task(self.usenetbot.show_downloading_status(self.bot,ctx.channel.id,ctx.message))
 
-            await replymsg.delete()
+            # await replymsg.delete()
             
             # This is to make sure the nzb's have been added to sabnzbd
             # TODO: Find a better way and more dynamic way to handle it.
-            await asyncio.sleep(10) 
+            # await asyncio.sleep(10) 
             file_names = await self.usenetbot.get_file_names(success_taskids)
             print(f'file_names={file_names}')
             
             formatted_file_names = "\n".join(["`" + s + "`" for s in file_names])
             print(f'formatted_file_names={formatted_file_names}')
-            return await ctx.reply(f"**Following files were added to queue:\n{formatted_file_names}\nAdded by: <@{ctx.message.author.id}>\n(To view status send `{prefix}status`.)**", mention_author=False)
+            return await replymsg.edit(f"**Following files were added to queue:\n{formatted_file_names}\nAdded by: <@{ctx.message.author.id}>\n(To view status send `{prefix}status`.)**", mention_author=False)
 
         return await replymsg.edit(content="No task has been added.")
 
