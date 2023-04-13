@@ -496,10 +496,10 @@ class Usenet(commands.Cog):
         for id in nzbhydra_idlist:
             # Make sure that we are getting a number and not letters..
             if id.startswith("-"):
-              if not id.split("-")[1].isnumeric():
-                return await ctx.send("Please provide a proper ID.")
+                if not id.split("-")[1].isnumeric():
+                    return await ctx.send("Please provide a proper ID.")
             elif not id.isnumeric():
-              return await ctx.send("Please provide a proper ID.")
+                return await ctx.send("Please provide a proper ID.")
             
             nzburl = NZBHYDRA_URL_ENDPOINT.replace("replace_id", id)
             response = requests.get(nzburl)
@@ -516,7 +516,7 @@ class Usenet(commands.Cog):
 
         if success_taskids:
             sabnzbd_userid_log.setdefault(ctx.author.id, []).extend(success_taskids)
-            asyncio.create_task(self.usenetbot.show_downloading_status(self.bot,ctx.channel.id,ctx.message))
+            # asyncio.create_task(self.usenetbot.show_downloading_status(self.bot,ctx.channel.id,ctx.message))
 
             await replymsg.delete()
             
@@ -528,7 +528,7 @@ class Usenet(commands.Cog):
             
             formatted_file_names = "\n".join(["`" + s + "`" for s in file_names])
             print(f'formatted_file_names={formatted_file_names}')
-            return await ctx.reply(f"Following files were added to queue:\n{formatted_file_names}\nAdded by: <@{ctx.message.author.id}>", mention_author=False)
+            return await ctx.reply(f"**Following files were added to queue:\n{formatted_file_names}\nAdded by: <@{ctx.message.author.id}>\n(To view status send `{prefix}status`.)**", mention_author=False)
 
         return await replymsg.edit(content="No task has been added.")
 

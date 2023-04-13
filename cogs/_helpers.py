@@ -1,6 +1,6 @@
 
 import discord
-from datetime import datetime,timedelta
+from datetime import datetime,timedelta,timezone
 from cogs._config import *
 import requests
 from telegraph.aio import Telegraph
@@ -134,3 +134,16 @@ def humantime(seconds):
 def humantime2(seconds):
     time_str = str(timedelta(seconds=seconds))
     return time_str.split('.')[0]
+  
+def time_since(dt_obj):
+    now = datetime.now(timezone.utc)
+    time_diff = now - dt_obj
+    days = time_diff.days
+    hours, remainder = divmod(time_diff.seconds, 3600)
+    minutes, _ = divmod(remainder, 60)
+    if days > 0:
+        return f"{days}d"
+    elif hours > 0:
+        return f"{hours}h"
+    else:
+        return f"{minutes}m"
