@@ -534,7 +534,7 @@ class Usenet(commands.Cog):
             logger.info(f'file_names={file_names}')
             formatted_file_names = "\n".join(["`" + s + "`" for s in file_names])
             
-            return await replymsg.edit(f"**Following files were added to queue:\n{formatted_file_names}\nAdded by: <@{ctx.message.author.id}>\n(To view status send `{prefix}status`.)**", mention_author=False)
+            return await replymsg.edit(f"**Following files were added to queue:\n{formatted_file_names}\nAdded by: <@{ctx.message.author.id}>\n(To view status send `{prefix}status`.)**")
 
         return await replymsg.edit(content="No task has been added.")
 
