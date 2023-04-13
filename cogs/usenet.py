@@ -141,7 +141,7 @@ class UsenetHelper:
         file_names = []
         for task_id in task_ids:
             task = await self.get_task(task_id)
-            if len(task) == 0:
+            while (len(task) == 0):
               await asyncio.sleep(1)
               task = await self.get_task(task_id)
             print(f"recieved task: {task}")
