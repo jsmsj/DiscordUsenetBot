@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 from loggerfile import logger
 
-from cogs._helpers import humanbytes,NZBHYDRA_ENDPOINT, NZBHYDRA_STATS_ENDPOINT,time_since
+from cogs._helpers import humanbytes,NZBHYDRA_ENDPOINT, NZBHYDRA_STATS_ENDPOINT,format_time_since
 
 
 class NzbHydra:
@@ -42,13 +42,13 @@ class NzbHydra:
 
             # Show how old the nzb was on indexer
             dt = datetime.strptime(result[3], '%a, %d %b %Y %H:%M:%S %z')
-            time_str = time_since(dt)
-
+            time_str = format_time_since(dt)
+            
             ID = result[2]
 
             # if "-" in ID:
             #     ID = ID.replace("-", "")
-            message += f"<code> COPY Me: {ID} Age: {time_str} ago </code>\n"
+            message += f"<code> COPY Me: {ID} Age: {time_str}</code>\n"
             if index == 100:
                 break
 
