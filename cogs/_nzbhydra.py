@@ -48,7 +48,7 @@ class NzbHydra:
 
             # if "-" in ID:
             #     ID = ID.replace("-", "")
-            message += f"<code> COPY Me: {ID} Age: {time_str}</code>\n"
+            message += f"<code>COPY Me: {ID} Age: {time_str}</code>\n"
             if index == 100:
                 break
 
