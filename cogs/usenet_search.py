@@ -87,20 +87,20 @@ class UsenetSearch(commands.Cog):
         
             await msg.edit(content=output)
         else:
-            telegraph_url = await hp.telegraph_paste(content=output)
-            await msg.edit(content=f'{telegraph_url}')
+            telegraph_url = await hp.telegraph_paste(content=output[0])
+            await msg.edit(content=f'Found {output[1]} Results\n{telegraph_url}')
 
-    @commands.command()
-    @cog_check()
-    @hp.sudo_check()
-    async def indexers(self,ctx:commands.Context):
-        replymsg = await ctx.send("Fetching list....")
-        indexers = await self.nzbhydra.list_indexers()
-        logger.info(f'{ctx.author.name} ({ctx.author.id}) ran command for listing indexers')
-        if indexers:
-            return await replymsg.edit(content=indexers)
+    # @commands.command()
+    # @cog_check()
+    # @hp.sudo_check()
+    # async def indexers(self,ctx:commands.Context):
+    #     replymsg = await ctx.send("Fetching list....")
+    #     indexers = await self.nzbhydra.list_indexers()
+    #     logger.info(f'{ctx.author.name} ({ctx.author.id}) ran command for listing indexers')
+    #     if indexers:
+    #         return await replymsg.edit(content=indexers)
 
-        return await replymsg.edit(content="No indexers found.")
+    #     return await replymsg.edit(content="No indexers found.")
 
     @commands.command()
     async def temp(self,ctx,*,content):

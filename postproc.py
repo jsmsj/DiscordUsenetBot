@@ -50,12 +50,17 @@ LOGFILE_PATH = "/home/master/.config/sabnzbd/logs/sabnzbd.log"
 
 #Rclone upload directory and flags.  
 RCLONE_REMOTE_NAME = ""
-RCLONE_DIRECTORY_NAME = "UsenetUpload"  # leave empty if there isn't one.
+RCLONE_DIRECTORY_NAME = "UsenetUpload/NoSort"  # leave empty if there isn't one.
+if category == "movies":
+    RCLONE_DIRECTORY_NAME = "UsenetUpload/Movies"
+elif category == "tv":
+    RCLONE_DIRECTORY_NAME = "UsenetUpload/TV"
 RCLONE_UPLOAD_DIRECTORY = directory.split("/")[-1]
+if category == "tv":
+    RCLONE_UPLOAD_DIRECTORY = f'{directory.split("/")[-2]}/{directory.split("/")[-1]}'
 DRIVE_UPLOAD_DIRECTORY = f"{RCLONE_REMOTE_NAME}:{RCLONE_DIRECTORY_NAME}/{RCLONE_UPLOAD_DIRECTORY}"
 
-rclone_command = f"gclone copy -v --stats=1s --stats-one-line --drive-chunk-size=256M --fast-list --transfers=1 --exclude _UNPACK_*/** --exclude _FAILED_*/** --exclude *.rar '{directory}' '{DRIVE_UPLOAD_DIRECTORY}' "
-
+rclone_command = f"gclone copy -v --stats=1s --stats-one-line --drive-chunk-size=256M --fast-list --transfers=1 --exclude _UNPACK_*/** --exclude _FAILED_*/** --exclude *.rar \"{directory}\" \"{DRIVE_UPLOAD_DIRECTORY}\" "
 
 logging.basicConfig(
     level=logging.INFO,
@@ -82,8 +87,42 @@ def get_readable_bytes(size: str) -> str:
         raised_to_pow += 1
     return f"{str(round(size, 2))} {dict_power_n[raised_to_pow]}B"
 
+def convert_bytes_to_size(bytes: str) -> str:
+    """
+    Convert bytes (given as a string) to human-readable size in KB, MB, GB, or TB.
+    """
+    sizes = ["B", "KB", "MB", "GB", "TB"]
+    if not bytes.isdigit():
+        raise ValueError("Input must be a positive integer")
+    bytes = int(bytes)
+    if bytes == 0:
+        return "0 B"
+    idx = min(4, int(math.log(bytes, 1024)))
+    size = bytes / (1024 ** idx)
+    return f"{size:.2f} {sizes[idx]}"
 
-def webhook_notification(message:str,**kwargs):
+
+def webhook_notification(message:str):
+    data = {
+        "content": message,
+        "embeds": None,
+        "attachments": [],
+	"username": "",
+    	"avatar_url": ""
+    }
+    headers = {
+        'Content-Type': 'application/json'
+    }
+    
+    response:requests.Response = requests.post(DISCORD_NOTIFICATION_WEBHOOK_URL,headers=headers,json=data)
+
+    if response.status_code == 204:
+        sys.exit(0)
+
+    print("Something happened.....")
+    sys.exit(1)
+
+def webhook_notification_embed(message:str,**kwargs):
     if kwargs.get('primitive'):
         data = {
             "content": message,
@@ -107,14 +146,14 @@ def webhook_notification(message:str,**kwargs):
             },
             {
             "name": "Location",
-            "value": "**[FlightClub Contrib] / UsenetUpload /**"
+            "value": "****"     ## TODO: UPLOAD LOCATION
             }
         ],
         "timestamp": f"{time_str}"
         }
     ],
-    "username": "FlightClubUsenetBot",
-    "avatar_url": "https://i.imgur.com/ly52aG7.png",
+    "username": "",
+    "avatar_url": "",
     "attachments": []
     }
     
@@ -169,15 +208,32 @@ reasons = {
 
 if str(postprocstatus) in reasons:
     reason = reasons[postprocstatus]
-    notification_message = f"`🗂 {jobname}`\n\n{reason} "
-    webhook_notification(message=notification_message,primitive=True)
+    notification_message = f"`📁 {jobname}`\n\n{reason} "
+    webhook_notification(message=notification_message)
     sys.exit(1)
 
 
 run_command(rclone_command)
 
 # deleting file from local drive.
-shutil.rmtree(directory)
+contains_prefix = False
+prefix = "_UNPACK_"
+for folder_name in os.listdir(directory):
+    if folder_name.startswith(prefix) and os.path.isdir(os.path.join(directory, folder_name)):
+        LOGGER(__name__).info(f"Folder starting with {prefix} found: {folder_name}")
+        contains_prefix = True
+    else:
+        path = os.path.join(directory, folder_name)
+        if os.path.isfile(path):
+            os.unlink(path)
+            LOGGER(__name__).info(f"File deleted: {path}")
+        elif os.path.isdir(path):
+            shutil.rmtree(path)
+            LOGGER(__name__).info(f"Directory deleted: {path}")
+
+if not contains_prefix:
+  shutil.rmtree(directory)
+  LOGGER(__name__).info(f"Directory deleted: {directory}")
 try:
     file_size = os.environ["SAB_BYTES_DOWNLOADED"]
     file_size = get_readable_bytes(int(file_size))
@@ -198,6 +254,6 @@ if SHOW_DRIVE_LINK:
 
 
 notification_message = (
-    f"`🗂 {jobname}`\n\n{file_size} | Success | {drive_link}")
+    f"`📁 {jobname}`\n\n{file_size} | Success |{drive_link}")
 
-webhook_notification(message=None, filename=jobname,file_size=file_size)
+webhook_notification(message=notification_message)

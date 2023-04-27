@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 from loggerfile import logger
 
-from cogs._helpers import humanbytes,NZBHYDRA_ENDPOINT, NZBHYDRA_STATS_ENDPOINT,humantime2
+from cogs._helpers import humanbytes,NZBHYDRA_ENDPOINT, NZBHYDRA_STATS_ENDPOINT,format_time_since
 
 
 class NzbHydra:
@@ -31,8 +31,8 @@ class NzbHydra:
             for item in channel.findall("item")
         ]
 
-        title = f"<strong> NZB Search Results for: {query}</strong>\n\n"
-        message = "<hr>\n"
+        title = f"<h4> NZB Search Results for: {query}</h4>\n"
+        message = ""
         if len(search_result) == 0:
             logger.info(f'Searched for {query} found 0 results....')
             return None
@@ -42,21 +42,19 @@ class NzbHydra:
 
             # Show how old the nzb was on indexer
             dt = datetime.strptime(result[3], '%a, %d %b %Y %H:%M:%S %z')
-            now = datetime.now(timezone.utc)
-            diff = now - dt
-            time_str = humantime2(diff.total_seconds())
-
+            time_str = format_time_since(dt)
+            
             ID = result[2]
 
             # if "-" in ID:
             #     ID = ID.replace("-", "")
-            message += f"<pre> COPY Me: {ID} Age: {time_str} ago </pre>\n"
+            message += f"<code>COPY Me: {ID} Age: {time_str}</code>\n"
             if index == 100:
                 break
 
         if message:
             html_content = title + message
-            return html_content
+            return (html_content, index + 1)
         return None
 
     async def query_search(self, query):

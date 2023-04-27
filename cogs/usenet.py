@@ -136,6 +136,28 @@ class UsenetHelper:
 
         return '',status_embed
     
+    async def get_file_names(self, task_ids):
+        logger.info(f"Recieved get_file_names({task_ids})")
+        file_names = []
+        for task_id in task_ids:
+            task = await self.get_task(task_id)
+            while (not task):
+              asyncio.sleep(1)
+              task = await self.get_task(task_id)
+            
+            logger.info(f"recieved task: {task}")
+            if task:
+                file_name = task[0]['filename']
+                while (re.search(r"(http|https)", file_name)):
+                    await asyncio.sleep(1)
+                    task = await self.get_task(task_id)
+                    if task:
+                        file_name = task[0]["filename"]
+                if not re.search(r"(http|https)", file_name):
+                    file_names.append(file_name)
+        logger.info(f"File names retrieved: {file_names}")
+        return file_names
+
     async def check_task(self, task_id):
         response = await self.client.get(
             self.SABNZBD_API, params={"mode": "queue", "nzo_ids": task_id})
@@ -148,7 +170,7 @@ class UsenetHelper:
             self.SABNZBD_API, params={"mode": "queue", "nzo_ids": task_id})
         
         response = response.json()
-        return bool(response["queue"]["slots"])
+        return response["queue"]["slots"]
 
     async def resume_task(self, task_id):
         isValidTaskID = await self.check_task(task_id)
@@ -475,42 +497,44 @@ class Usenet(commands.Cog):
         nzbhydra_idlist = nzbids.split(" ")
         if not nzbhydra_idlist:
             return await ctx.send("Please provide a proper ID.")
-        replymsg = await ctx.send("Adding your requested ID(s). Please Wait...")
+        replymsg = await ctx.reply("Adding your requested ID(s). Please Wait...", mention_author=False)
         success_taskids = []
-        # print(nzbhydra_idlist)
         for id in nzbhydra_idlist:
+            # Make sure that we are getting a number and not letters..
+            if id.startswith("-"):
+                if not id.split("-")[1].isnumeric():
+                    return await ctx.send("Please provide a proper ID.")
+            elif not id.isnumeric():
+                return await ctx.send("Please provide a proper ID.")
+            
             nzburl = NZBHYDRA_URL_ENDPOINT.replace("replace_id", id)
-            # for nzburl in [
-            #     NZBHYDRA_URL_ENDPOINT.replace("replace_id", id),
-            #     NZBHYDRA_URL_ENDPOINT.replace("replace_id", f"-{id}"),
-            # ]:
-            response = requests.head(nzburl)
+            response = requests.get(nzburl)
             if "Content-Disposition" in response.headers:
-                result = await self.usenetbot.add_nzburl(nzburl)
-                # print(result)
-                logger.info(f'{ctx.author.name} ({ctx.author.id}) added nzb id ({id}) which resulted in {"success" if result["status"] else "failure"} | {result} | 1')   
-                if result["status"]:
-                    success_taskids.append(result["nzo_ids"][0])
-
+                result2 = await self.usenetbot.add_nzburl(nzburl)
+                logger.info(f'[GET] {ctx.author.name} ({ctx.author.id}) added nzb id ({id}) which resulted in {"success" if result2["status"] else "failure"} | {result2} | 2')   
+                if result2["status"]:
+                    success_taskids.append(result2["nzo_ids"][0])
             elif 'Retry-After' in response.headers:
-                logger.info(f'{ctx.author.name} ({ctx.author.id}) added nzb id ({id}) which resulted in failure due getting Retry-After.')   
+                logger.info(f'{ctx.author.name} ({ctx.author.id}) added nzb id ({id}) which resulted in failure due getting Retry-After.')
                 await ctx.send(f'Unable to add {id} , got a retry after message. Retry after {str(response.headers.get("Retry-After"))} seconds <t:{round(datetime.datetime.now().timestamp()+int(response.headers.get("Retry-After")))}:R>')
             else:
-                r2 = requests.get(nzburl)
-                if "Content-Disposition" in r2.headers:
-                    result2 = await self.usenetbot.add_nzburl(nzburl)
-                    logger.info(f'{ctx.author.name} ({ctx.author.id}) added nzb id ({id}) which resulted in {"success" if result2["status"] else "failure"} | {result2} | 2')   
-                    if result2["status"]:
-                        success_taskids.append(result2["nzo_ids"][0])
-                else:
-                    await ctx.send(f'Some error has occured. \n Details: ```\n{remove_private_stuff(str(nzburl))}\n\n{remove_private_stuff(str(r2.content))}\n\n{remove_private_stuff(str(r2.headers))}```')
+                await ctx.send(f'Some error has occured. \n Details: ```\n{remove_private_stuff(str(nzburl))}\n\n{remove_private_stuff(str(response.content))}\n\n{remove_private_stuff(str(response.headers))}```')
 
         if success_taskids:
             sabnzbd_userid_log.setdefault(ctx.author.id, []).extend(success_taskids)
-            asyncio.create_task(self.usenetbot.show_downloading_status(self.bot,ctx.channel.id,ctx.message))
+            # asyncio.create_task(self.usenetbot.show_downloading_status(self.bot,ctx.channel.id,ctx.message))
 
-            await replymsg.delete()
-            return await ctx.reply(f"{len(success_taskids)} Tasks have been successfully added.", mention_author=False)
+            # await replymsg.delete()
+            
+            # This is to make sure the nzb's have been added to sabnzbd
+            # TODO: Find a better way and more dynamic way to handle it.
+            await asyncio.sleep(10)
+            
+            file_names = await self.usenetbot.get_file_names(success_taskids)
+            logger.info(f'file_names={file_names}')
+            formatted_file_names = "\n".join(["`" + s + "`" for s in file_names])
+            
+            return await replymsg.edit(content=f"**Following files were added to queue:\n{formatted_file_names}\nAdded by: <@{ctx.message.author.id}>\n(To view status send `{prefix}status`.)**")
 
         return await replymsg.edit(content="No task has been added.")
 
